@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Language Learning App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      background-color: #2c3e50; /* Темный фон вместо градиента */
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    
+    #app {
+      width: 100%;
+      max-width: 600px;
+      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.6); /* Полупрозрачный черный фон для приложения */
+      border-radius: 10px;
+    }
+
+    #word-card {
+      margin: 20px auto;
+      padding: 20px;
+      border: 2px solid #333;
+      background-color: #f9f9f9;
+      width: 300px;
+      font-size: 24px;
+      cursor: pointer;
+      transition: background-color 0.3s ease-in-out;
+      border-radius: 8px;
+    }
+
+    #word-card:hover {
+      background-color: #ff9e6d; /* Плавный переход на оранжевый при наведении */
+    }
+
+    #answer {
+      width: 80%;
+      padding: 10px;
+      font-size: 18px;
+      margin: 10px 0;
+      border-radius: 8px;
+      transition: background-color 0.3s ease;
+    }
+
+    #answer:focus {
+      background-color: #ff9e6d; /* Плавное изменение фона при фокусе */
+    }
+
+    #check-answer {
+      padding: 10px 20px;
+      font-size: 18px;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background-color 0.3s ease;
+    }
+
+    #check-answer:hover {
+      background-color: #45a049; /* Плавное изменение цвета при наведении */
+    }
+
+    #statistics p {
+      font-size: 16px;
+    }
+
+    #modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7); /* Темный фон для модального окна */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #modal-content {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      color: #333; /* Цвет текста для модального окна */
+    }
+
+    #modal h2 {
+      color: #ff6f00; /* Цвет заголовка */
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 480px) {
+      #word-card {
+        font-size: 18px;
+      }
+      #answer {
+        font-size: 16px;
+      }
+    }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <h1>Контроль знань іноземної мови</h1>
+    <div id="word-card">
+      <h2 id="current-word">Click to start</h2>
+    </div>
+    <input type="text" id="answer" placeholder="Введіть переклад">
+    <button id="check-answer">Перевірити</button>
+    <div id="statistics">
+      <p>Прогрес: <span id="progress">0</span>/10</p>
+      <p>Вірно: <span id="correct-count">0</span></p>
+      <p>Невірно: <span id="incorrect-count">0</span></p>
+    </div>
+  </div>
+
+  <div id="modal" class="hidden">
+    <div id="modal-content">
+      <h2>Результати</h2>
+      <p>Рівень знань: <span id="knowledge-level"></span></p>
+      <button id="restart">Почати знову</button>
+    </div>
+  </div>
+
+  <script>
+  $(document).ready(function () {
+    const words = [
+      { word: "plumbing", translation: "водопровід" },
+      { word: "shelter", translation: "укриття" },
+      { word: "turkey", translation: "індичка" },
+      { word: "cherry", translation: "вишня" },
+      { word: "brain", translation: "мозок" },
+      { word: "radio", translation: "радіо" },
+      { word: "hurricane", translation: "ураган" },
+      { word: "strawberry", translation: "полуниця" },
+      { word: "eye", translation: "око" },
+      { word: "box", translation: "коробка" },
+      { word: "car", translation: "машина" },
+      { word: "carpet", translation: "килим" },
+      { word: "plane", translation: "літак" },
+      { word: "crown", translation: "корона" },
+      { word: "boat", translation: "човен" },
+      { word: "helicopter", translation: "гвинтокрил" },
+      { word: "house", translation: "будинок" },
+      { word: "school", translation: "школа" },
+      { word: "tree", translation: "дерево" },
+      { word: "flower", translation: "квітка" }
+    ];
+
+    let shuffledWords = [...words].sort(() => Math.random() - 0.5);
+    let currentIndex = 0;
+    let correctCount = 0;
+    let incorrectCount = 0;
+    let isGameOver = false;
+
+    function updateStatistics() {
+      $("#progress").text(currentIndex); 
+      $("#correct-count").text(correctCount);
+      $("#incorrect-count").text(incorrectCount);
+    }
+
+    function showModal() {
+      const knowledgeLevel = correctCount > 7 ? "Високий" : correctCount > 4 ? "Середній" : "Низький";
+      $("#knowledge-level").text(knowledgeLevel); 
+      $("#modal").show();
+    }
+
+    $("#word-card").click(function () {
+      if (!isGameOver && currentIndex < 10) {
+        $("#current-word").text(shuffledWords[currentIndex].word);
+      }
+    });
+
+    $("#check-answer").click(function () {
+      checkAnswer();
+    });
+
+    $("#answer").keypress(function (event) {
+      if (event.key === "Enter") {
+        checkAnswer();
+      }
+    });
+
+    function checkAnswer() {
+      if (isGameOver) {
+        alert("Гра завершена. Натисніть 'Почати знову', щоб почати спочатку.");
+        return;
+      }
+
+      const userAnswer = $("#answer").val().trim().toLowerCase();
+      if (userAnswer === "") {
+        alert("Будь ласка, введіть відповідь.");
+        return;
+      }
+
+      if (userAnswer === shuffledWords[currentIndex].translation.toLowerCase()) {
+        correctCount++;
+      } else {
+        incorrectCount++;
+      }
+
+      currentIndex++;
+      updateStatistics();
+
+      if (currentIndex < 10) {
+        $("#current-word").text(shuffledWords[currentIndex].word);
+      } else {
+        isGameOver = true;
+        showModal();
+      }
+
+      $("#answer").val("");
+    }
+
+    $("#restart").click(function () {
+      shuffledWords = [...words].sort(() => Math.random() - 0.5);
+      currentIndex = 0;
+      correctCount = 0;
+      incorrectCount = 0;
+      isGameOver = false;
+      updateStatistics();
+      $("#current-word").text("Click to start");
+      $("#modal").hide();
+    });
+
+    updateStatistics();
+  });
+  </script>
+</body>
+</html>
